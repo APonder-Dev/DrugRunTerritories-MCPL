@@ -1,0 +1,115 @@
+name: DrugRunTerritories
+version: '${project.version}'
+main: dev.aponder.drugrun.territories.DrugRunTerritoriesPlugin
+description: Faction territory capture, raid coordination and drug-economy integration for DrugRun.
+author: Anthony Ponder / APonder.dev
+website: https://aponder.dev
+api-version: '26.3'
+folia-supported: false
+
+dependencies:
+  server:
+    # Authoritative for factions, claims, DTR, shields and grace.
+    FactionsUUID:
+      load: BEFORE
+      required: true
+      join-classpath: true
+    # Shared DrugRun framework. Not yet released: DrugRunTerritories runs on its own
+    # stand-in config/storage layer until DrugRunCore ships (see DRUGRUNCORE-INTEGRATION.md).
+    DrugRunCore:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    DrugLab:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    Vault:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    PlaceholderAPI:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    WorldGuard:
+      load: BEFORE
+      required: false
+      join-classpath: true
+
+permissions:
+  drugrun.territories.*:
+    description: All player and admin permissions. The arena bypass is granted separately.
+    default: op
+    children:
+      drugrun.territories.player: true
+      drugrun.territories.admin: true
+  drugrun.territories.player:
+    description: All player commands.
+    default: true
+    children:
+      drugrun.territories.command.help: true
+      drugrun.territories.command.territories: true
+      drugrun.territories.command.info: true
+      drugrun.territories.command.map: true
+      drugrun.territories.command.leaderboard: true
+      drugrun.territories.command.faction.stats: true
+      drugrun.territories.command.faction.progression: true
+      drugrun.territories.command.faction.upgrades: true
+      drugrun.territories.capture: true
+  drugrun.territories.capture:
+    description: Counts towards territory captures.
+    default: true
+  drugrun.territories.command.help:
+    default: true
+  drugrun.territories.command.territories:
+    default: true
+  drugrun.territories.command.info:
+    default: true
+  drugrun.territories.command.map:
+    default: true
+  drugrun.territories.command.leaderboard:
+    default: true
+  drugrun.territories.command.faction.stats:
+    default: true
+  drugrun.territories.command.faction.progression:
+    default: true
+  drugrun.territories.command.faction.upgrades:
+    default: true
+  drugrun.territories.admin:
+    description: All administrative commands.
+    default: op
+    children:
+      drugrun.territories.admin.reload: true
+      drugrun.territories.admin.debug: true
+      drugrun.territories.admin.territory.create: true
+      drugrun.territories.admin.territory.delete: true
+      drugrun.territories.admin.territory.setcapture: true
+      drugrun.territories.admin.territory.setregion: true
+      drugrun.territories.admin.territory.reset: true
+      drugrun.territories.admin.territory.forcecapture: true
+      drugrun.territories.admin.faction.resetstats: true
+      drugrun.territories.admin.economy.audit: true
+  drugrun.territories.admin.reload:
+    default: op
+  drugrun.territories.admin.debug:
+    default: op
+  drugrun.territories.admin.territory.create:
+    default: op
+  drugrun.territories.admin.territory.delete:
+    default: op
+  drugrun.territories.admin.territory.setcapture:
+    default: op
+  drugrun.territories.admin.territory.setregion:
+    default: op
+  drugrun.territories.admin.territory.reset:
+    default: op
+  drugrun.territories.admin.territory.forcecapture:
+    default: op
+  drugrun.territories.admin.faction.resetstats:
+    default: op
+  drugrun.territories.admin.economy.audit:
+    default: op
+  drugrun.territories.bypass.arena:
+    description: Build and break blocks inside protected territory arenas.
+    default: false

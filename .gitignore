@@ -1,0 +1,27 @@
+# Build output
+target/
+*.class
+
+# Maven wrapper downloads
+.mvn/wrapper/maven-wrapper.jar
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local test servers and databases
+run/
+server/
+*.db
+*.db-wal
+*.db-shm
+*.log

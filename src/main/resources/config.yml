@@ -1,0 +1,207 @@
+# ---------------------------------------------------------------------------
+# DrugRunTerritories - main configuration
+# Every key in this file belongs to DrugRunTerritories. None of them exist in
+# FactionsUUID, DrugLab or DrugRunCore. Faction size, DTR, regeneration and
+# grace are configured in FactionsUUID's own config (see FACTIONS-INTEGRATION.md).
+# Values are validated on startup and on /drugrun admin reload; invalid or
+# contradictory values stop the load and keep the previous configuration.
+# ---------------------------------------------------------------------------
+config-version: 1
+
+general:
+  # Extra console output for capture ticks and policy decisions.
+  debug: false
+
+integrations:
+  drugruncore:
+    # DrugRunCore is not released yet. While false, the plugin uses its own
+    # config/storage layer. Set true to refuse to start without DrugRunCore.
+    required: false
+  factionsuuid:
+    # FactionsUUID is always required; this key is informational only.
+    required: true
+  druglab:
+    # Turns on crop/station authorization, dealer bonuses and production stats.
+    enabled: true
+    # Refuse to start when DrugLab is missing while drug bonuses are enabled.
+    # Set false to run without DrugLab (drug bonuses are then inactive).
+    required-for-drug-bonuses: true
+  vault:
+    enabled: true
+  placeholderapi:
+    enabled: true
+  worldguard:
+    enabled: true
+
+territories:
+  enabled: true
+  # How often capture zones are evaluated, in server ticks (20 = 1 second).
+  tick-interval-ticks: 20
+
+  capture:
+    duration-seconds: 600
+    minimum-faction-players: 2
+    # PAUSE: progress freezes while contested. DECAY: progress drains.
+    contested-behavior: PAUSE
+    # Progress (seconds) lost per second while contested (DECAY) or abandoned.
+    decay-per-second: 1.0
+    # Drain progress when the capturing faction drops below the minimum.
+    decay-when-abandoned: true
+    ownership-duration-hours: 24
+    # After a capture or an expiry, the territory cannot be captured again for this long.
+    cooldown-minutes: 60
+    maximum-per-faction: 2
+    # Players who have not moved or turned their head for this long do not count. 0 disables.
+    afk-timeout-seconds: 120
+    # Creative-mode players do not count (spectators never count).
+    exclude-creative: true
+    # Allow a controlled territory to be challenged once its post-capture cooldown ends.
+    allow-challenges: true
+
+  bonuses:
+    # HIGHEST: only the strongest bonus applies.
+    # ADDITIVE: bonuses add up (1.10 + 1.10 -> 1.20), then the hard cap applies.
+    # CAPPED_MULTIPLICATIVE: bonuses multiply (1.10 * 1.10 -> 1.21), then the hard cap applies.
+    stacking: CAPPED_MULTIPLICATIVE
+    # No combination of territory bonuses can exceed this multiplier.
+    hard-cap: 1.25
+    dealer:
+      # Seller must stand inside one of these worlds (empty = any world).
+      allowed-worlds: []
+      # Lowest faction rank that receives the dealer bonus: RECRUIT, MEMBER, MODERATOR, COLEADER or LEADER.
+      minimum-rank: RECRUIT
+      # Largest single bonus payment added to one sale. 0 disables the cap.
+      max-bonus-per-transaction: 5000.0
+
+  income:
+    # Pay periods that elapsed while the server was offline. Off by default.
+    pay-missed-periods: false
+    # LEADER pays the faction admin's Vault account. ONLINE_MEMBERS splits among online members.
+    recipient: LEADER
+
+  protection:
+    # Stop block breaking, placing, explosions, fluids, pistons and fire inside territory regions.
+    prevent-arena-griefing: true
+    respect-factionsuuid: true
+    respect-worldguard: true
+
+raiding:
+  # Keep DrugLab plants and stations from being blown up in claims that are not raidable
+  # (protected, shielded or in grace). Raidable claims follow DrugLab's own explosion setting.
+  protect-druglab-in-protected-claims: true
+  # Wilderness DrugLab plants and stations: ALLOW lets DrugLab decide, PREVENT keeps them safe.
+  wilderness-druglab-explosions: ALLOW
+  # Remove explosion blocks in a claim whose raid state cannot be determined.
+  fail-closed: true
+  # Drops when an explosion destroys a DrugLab plant it was allowed to reach (only happens when
+  # DrugLab's own explosions-break-plants setting is on).
+  # NORMAL: DrugLab's drops. REDUCED: keep reduced-drop-fraction of each stack. NONE: nothing drops.
+  plant-explosion-drops: NORMAL
+  reduced-drop-fraction: 0.5
+
+druglab:
+  plants:
+    # Every block a plant will ever occupy must be buildable by the planter.
+    check-full-footprint: true
+    # Stop a plant from growing when its next stage would enter land its owner cannot build in.
+    freeze-on-unauthorized-growth: true
+    # Harvesting and fertilizing need build access to the plant's base block.
+    require-access-to-harvest: true
+    require-access-to-fertilize: true
+  stations:
+    # Opening a DrugLab station needs container access in its claim.
+    require-container-access: true
+
+progression:
+  enabled: true
+  xp:
+    territory-capture: 500
+    territory-defense: 250
+    raid-victory: 300
+    # Granted to each faction once every this many mature harvests by its members. 0 disables.
+    production-milestone-harvests: 50
+    production-milestone-xp: 100
+    # Per minute a territory is held.
+    control-per-minute: 1
+    # Granted each time members' paid DrugLab dealer sales reach another multiple of this many items. 0 disables.
+    sale-milestone-items: 500
+    sale-milestone-xp: 100
+    # Granted once every this many DrugLab processing jobs collected by members. 0 disables.
+    processing-milestone-jobs: 25
+    processing-milestone-xp: 50
+  reputation:
+    territory-capture: 25
+    territory-defense: 10
+    raid-victory: 15
+  # A raid victory against the same faction only counts once per this many hours.
+  raid-victory-cooldown-hours: 6
+  # XP needed to reach each level. Level 1 needs 0 XP.
+  levels:
+    - xp: 0
+    - xp: 1000
+    - xp: 2500
+      extra-territory-slots: 1
+    - xp: 5000
+    - xp: 10000
+      extra-territory-slots: 1
+  # Absolute ceiling on territories per faction, including level unlocks.
+  absolute-max-territories: 3
+
+loot-keys:
+  faction-policy:
+    prevent-same-faction-kills: true
+    prevent-allied-faction-kills: true
+    # Truce counts as allied for Loot Keys.
+    treat-truce-as-ally: true
+    allow-enemy-faction-kills: true
+    # Kills between neutral factions, or involving players without a faction, in claimed land.
+    allow-neutral-kills: true
+    allow-wilderness-pvp: true
+    allow-warzone-pvp: true
+    deny-in-safezones: true
+    # Per-territory overrides: ALLOW or DENY applies to every kill inside that territory's region.
+    territory-overrides: {}
+
+announcements:
+  capture-started: true
+  capture-contested: true
+  capture-completed: true
+  territory-expired: true
+  faction-raidable: true
+  # Sound keys as in /playsound, e.g. entity.player.levelup. Empty disables the sound.
+  sounds:
+    capture-completed: entity.player.levelup
+    contested: block.note_block.bass
+    volume: 1.0
+    pitch: 1.0
+  particles:
+    enabled: true
+    type: HAPPY_VILLAGER
+    count: 20
+  # BossBars are shown to players inside a territory's region.
+  bossbar:
+    enabled: true
+  actionbar:
+    enabled: true
+
+storage:
+  # SQLITE, MYSQL or MARIADB
+  type: SQLITE
+  sqlite-file: territories.db
+  host: localhost
+  port: 3306
+  database: drugrun
+  username: drugrun
+  password: ''
+  table-prefix: drt_
+  pool-size: 4
+  connection-timeout-ms: 10000
+  query-timeout-seconds: 10
+
+performance:
+  # Threads used for database work.
+  async-threads: 2
+  # Pending database tasks before new ones are rejected (and logged).
+  async-queue-size: 2000
+  # How often capture progress is written to storage, in seconds.
+  progress-save-interval-seconds: 15

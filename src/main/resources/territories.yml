@@ -1,0 +1,81 @@
+# ---------------------------------------------------------------------------
+# DrugRunTerritories - territory definitions
+# Coordinates below are placeholders: set real ones in-game with
+#   /drugrun admin territory setregion <id> pos1   (then pos2 at the opposite corner)
+#   /drugrun admin territory setcapture <id> [radius]
+#   /drugrun admin territory enable <id>
+# Any key under "capture" overrides the matching global default in config.yml.
+#
+# bonuses: multiplier per bonus type, applied to the controlling faction.
+#   DEALER_SELL       - DrugLab dealer sale price
+#   PROCESSING_SPEED  - DrugLab processing time (needs a DrugLab build with ModifierProvider)
+#   CROP_GROWTH       - DrugLab crop growth speed (needs a DrugLab build with ModifierProvider)
+# income: recurring Vault payout to the controlling faction.
+# protection: ARENA protects the region from griefing; NONE leaves it to other plugins.
+# pvp: DEFAULT leaves PvP to FactionsUUID/WorldGuard; DENY blocks player damage inside the region.
+# schedule: capture windows in server time, e.g. ["18:00-22:00"]. Empty = always open.
+# ---------------------------------------------------------------------------
+territories:
+  docks:
+    display-name: "<aqua>The Docks</aqua>"
+    type: DOCKS
+    # Disabled until real coordinates are set, so placeholder regions never protect live land.
+    enabled: false
+    world: world
+    region: { min: [0, 0, 0], max: [127, 255, 127] }
+    capture: { center: [64, 64, 64], radius: 8 }
+    allowed-factions: []
+    schedule: []
+    protection: ARENA
+    pvp: DEFAULT
+    bonuses:
+      DEALER_SELL: 1.10
+    rewards: { xp: 0, reputation: 10, money: 0 }
+
+  industrial:
+    display-name: "<gray>Industrial District</gray>"
+    type: INDUSTRIAL
+    # Disabled until real coordinates are set, so placeholder regions never protect live land.
+    enabled: false
+    world: world
+    region: { min: [200, 0, 0], max: [327, 255, 127] }
+    capture: { center: [264, 64, 64], radius: 8 }
+    allowed-factions: []
+    schedule: []
+    protection: ARENA
+    pvp: DEFAULT
+    bonuses:
+      PROCESSING_SPEED: 1.10
+    rewards: { xp: 0, reputation: 10, money: 0 }
+
+  greenhouse:
+    display-name: "<green>Greenhouse District</green>"
+    type: GREENHOUSE
+    # Disabled until real coordinates are set, so placeholder regions never protect live land.
+    enabled: false
+    world: world
+    region: { min: [0, 0, 200], max: [127, 255, 327] }
+    capture: { center: [64, 64, 264], radius: 8 }
+    allowed-factions: []
+    schedule: []
+    protection: ARENA
+    pvp: DEFAULT
+    bonuses:
+      CROP_GROWTH: 1.10
+    rewards: { xp: 0, reputation: 10, money: 0 }
+
+  downtown:
+    display-name: "<gold>Downtown</gold>"
+    type: DOWNTOWN
+    # Disabled until real coordinates are set, so placeholder regions never protect live land.
+    enabled: false
+    world: world
+    region: { min: [200, 0, 200], max: [327, 255, 327] }
+    capture: { center: [264, 64, 264], radius: 8 }
+    allowed-factions: []
+    schedule: []
+    protection: ARENA
+    pvp: DEFAULT
+    bonuses: {}
+    income: { amount: 250.0, interval-minutes: 60, max-payouts-per-ownership: 24 }
+    rewards: { xp: 0, reputation: 20, money: 0 }

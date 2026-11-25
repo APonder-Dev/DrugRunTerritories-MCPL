@@ -1,0 +1,68 @@
+# Example DeluxeMenus menu for DrugRunTerritories.
+# Copy into plugins/DeluxeMenus/gui_menus/ and register it in DeluxeMenus' config.yml:
+#   gui_menus:
+#     territories:
+#       file: territories.yml
+# Uses only placeholders that DrugRunTerritories registers (see docs/COMMANDS.md).
+menu_title: '&8Territories'
+open_command: territories
+size: 27
+items:
+  docks:
+    material: OAK_BOAT
+    slot: 10
+    display_name: '&bThe Docks'
+    lore:
+      - '&7Status: &f%drugrun_territory_docks_status%'
+      - '&7Owner: &f%drugrun_territory_docks_owner%'
+      - '&7Progress: &f%drugrun_territory_docks_progress%%'
+      - '&7Bonus: &a+10% dealer sales'
+    left_click_commands:
+      - '[player] drugrun territory info docks'
+      - '[close]'
+  industrial:
+    material: BLAST_FURNACE
+    slot: 12
+    display_name: '&7Industrial District'
+    lore:
+      - '&7Status: &f%drugrun_territory_industrial_status%'
+      - '&7Owner: &f%drugrun_territory_industrial_owner%'
+      - '&7Progress: &f%drugrun_territory_industrial_progress%%'
+    left_click_commands:
+      - '[player] drugrun territory info industrial'
+      - '[close]'
+  greenhouse:
+    material: FLOWERING_AZALEA
+    slot: 14
+    display_name: '&aGreenhouse District'
+    lore:
+      - '&7Status: &f%drugrun_territory_greenhouse_status%'
+      - '&7Owner: &f%drugrun_territory_greenhouse_owner%'
+      - '&7Progress: &f%drugrun_territory_greenhouse_progress%%'
+    left_click_commands:
+      - '[player] drugrun territory info greenhouse'
+      - '[close]'
+  downtown:
+    material: GOLD_BLOCK
+    slot: 16
+    display_name: '&6Downtown'
+    lore:
+      - '&7Status: &f%drugrun_territory_downtown_status%'
+      - '&7Owner: &f%drugrun_territory_downtown_owner%'
+      - '&7Progress: &f%drugrun_territory_downtown_progress%%'
+      - '&7Pays the controlling faction every hour'
+    left_click_commands:
+      - '[player] drugrun territory info downtown'
+      - '[close]'
+  faction:
+    material: SHIELD
+    slot: 22
+    display_name: '&eYour faction'
+    lore:
+      - '&7Level: &f%drugrun_faction_level% &8(%drugrun_faction_xp% XP)'
+      - '&7Reputation: &f%drugrun_faction_reputation%'
+      - '&7Territories: &f%drugrun_faction_territories%'
+      - '&7Income earned: &f%drugrun_faction_income%'
+    left_click_commands:
+      - '[player] drugrun faction stats'
+      - '[close]'

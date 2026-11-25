@@ -1,0 +1,132 @@
+# ---------------------------------------------------------------------------
+# DrugRunTerritories - messages (MiniMessage format: https://docs.advntr.dev/minimessage/format)
+# <prefix> inserts the prefix below. Set a message to '' to switch it off.
+# Faction and player names are inserted as plain text and cannot carry formatting.
+# ---------------------------------------------------------------------------
+prefix: "<dark_gray>[<gold>DrugRun</gold>]</dark_gray> "
+
+general:
+  no-permission: "<prefix><red>You don't have permission to do that.</red>"
+  player-only: "<prefix><red>Only players can use this command.</red>"
+  unknown-command: "<prefix><red>Unknown command. Try</red> <yellow>/drugrun help</yellow>"
+  usage: "<prefix><gray>Usage:</gray> <yellow><usage></yellow>"
+  unknown-territory: "<prefix><red>No territory called</red> <yellow><id></yellow><red>.</red>"
+  unknown-faction: "<prefix><red>No faction called</red> <yellow><faction></yellow><red>.</red>"
+  no-faction: "<prefix><red>You are not in a faction.</red>"
+  factions-unavailable: "<prefix><red>Faction data is unavailable right now. Try again shortly.</red>"
+  error: "<prefix><red>Something went wrong. The error was logged.</red>"
+
+help:
+  player:
+    - "<gold><bold>DrugRun Territories</bold></gold>"
+    - "<yellow>/drugrun territories</yellow> <gray>- list territories</gray>"
+    - "<yellow>/drugrun territory info [id]</yellow> <gray>- details of a territory</gray>"
+    - "<yellow>/drugrun territory map</yellow> <gray>- where each territory is</gray>"
+    - "<yellow>/drugrun territory leaderboard [xp|reputation|captures|income]</yellow>"
+    - "<yellow>/drugrun faction stats|progression|upgrades</yellow> <gray>- your faction</gray>"
+  admin:
+    - "<red><bold>Admin</bold></red>"
+    - "<yellow>/drugrun admin reload</yellow> <gray>|</gray> <yellow>/drugrun admin debug</yellow>"
+    - "<yellow>/drugrun admin territory create <id> [type]</yellow> <gray>- at your position</gray>"
+    - "<yellow>/drugrun admin territory setregion <id> pos1|pos2</yellow>"
+    - "<yellow>/drugrun admin territory setcapture <id> [radius]</yellow>"
+    - "<yellow>/drugrun admin territory enable|disable|reset <id></yellow>"
+    - "<yellow>/drugrun admin territory forcecapture <id> <faction></yellow>"
+    - "<yellow>/drugrun admin territory delete <id> confirm</yellow>"
+    - "<yellow>/drugrun admin faction resetstats <faction> confirm</yellow>"
+    - "<yellow>/drugrun admin economy audit [all|paid|failed|unknown]</yellow>"
+
+list:
+  header: "<gold>Territories (<count>)</gold>"
+  entry: "<gray>-</gray> <territory> <dark_gray>(<id>)</dark_gray> <gray><status></gray> <white><owner></white>"
+  empty: "<prefix><gray>No territories are enabled.</gray>"
+
+info:
+  not-in-territory: "<prefix><gray>You are not inside a territory. Use</gray> <yellow>/drugrun territory info <id></yellow>"
+  lines:
+    - "<gold><bold><territory></bold></gold> <dark_gray>(<id>, <type>)</dark_gray>"
+    - "<gray>Status:</gray> <white><status></white>   <gray>Owner:</gray> <white><owner></white>"
+    - "<gray>Capturing:</gray> <white><capturer></white> <gray>(<progress>%)</gray>"
+    - "<gray>Ownership ends in:</gray> <white><expires></white>   <gray>Cooldown:</gray> <white><cooldown></white>"
+    - "<gray>Bonuses:</gray> <white><bonuses></white>"
+    - "<gray>Capture point:</gray> <white><world> <x>, <y>, <z></white>"
+
+map:
+  header: "<gold>Territory map</gold>"
+  entry: "<gray>-</gray> <territory> <white><distance>m <direction></white> <gray><status></gray> <white><owner></white>"
+  other-world: "<gray>-</gray> <territory> <dark_gray>(in <world>)</dark_gray> <gray><status></gray> <white><owner></white>"
+
+leaderboard:
+  header: "<gold>Top factions by <metric></gold>"
+  entry: "<yellow>#<rank></yellow> <white><faction></white> <gray>-</gray> <gold><value></gold>"
+  empty: "<prefix><gray>No faction has any progress yet.</gray>"
+
+faction:
+  stats:
+    - "<gold><bold><faction></bold></gold> <gray>statistics</gray>"
+    - "<gray>Territories:</gray> <white><territories></white>"
+    - "<gray>Captures:</gray> <white><captures></white>  <gray>Defences:</gray> <white><defenses></white>  <gray>Raid victories:</gray> <white><raids></white>"
+    - "<gray>Time in control:</gray> <white><control></white>  <gray>Harvests:</gray> <white><harvests></white>"
+    - "<gray>Territory income:</gray> <white><income></white>"
+    - "<gray>Dealer sales:</gray> <white><sold> items</white> <gray>(<sales>)</gray>  <gray>Jobs processed:</gray> <white><processed></white>"
+  progression:
+    - "<gold><bold><faction></bold></gold> <gray>progression</gray>"
+    - "<gray>Level:</gray> <white><level></white>  <gray>XP:</gray> <white><xp></white> <dark_gray>/ <next></dark_gray>"
+    - "<gray>Reputation:</gray> <white><reputation></white>  <gray>Territory limit:</gray> <white><limit></white>"
+  upgrades:
+    header: "<gold><faction> - DrugRun level unlocks</gold>"
+    entry: "<gray>Level <level></gray> <dark_gray>(<xp> XP)</dark_gray> <white>+<slots> territory slot(s)</white> <gray>[<status>]</gray>"
+    native: "<gray>Claim, power and member upgrades are FactionsUUID's own: see</gray> <yellow>/f upgrades</yellow>"
+
+admin:
+  reloaded: "<prefix><green>Configuration and territories reloaded.</green>"
+  reload-failed: "<prefix><red>Reload refused; the previous configuration is still active:</red>\n<gray><errors></gray>"
+  confirm: "<prefix><yellow>This cannot be undone. Run</yellow> <white><command></white> <yellow>to confirm.</yellow>"
+  created: "<prefix><green>Created territory</green> <territory> <dark_gray>(<id>)</dark_gray><green>. Adjust it with setregion and setcapture.</green>"
+  deleted: "<prefix><green>Deleted territory</green> <white><id></white><green>.</green>"
+  capture-set: "<prefix><green>Capture point of</green> <territory> <green>moved to your position.</green>"
+  region-set: "<prefix><green>Region corner of</green> <territory> <green>set to your position.</green>"
+  enabled: "<prefix><green>Enabled</green> <territory><green>.</green>"
+  disabled: "<prefix><yellow>Disabled</yellow> <territory><yellow>.</yellow>"
+  reset: "<prefix><green>Reset</green> <territory><green>. It is now available.</green>"
+  forcecaptured: "<prefix><green>Gave</green> <territory> <green>to</green> <white><faction></white><green>.</green>"
+  resetstats: "<prefix><green>Reset progression for</green> <white><faction></white><green>.</green>"
+  invalid: "<prefix><red><reason></red>"
+  audit:
+    header: "<gold>Recent payouts (<status>)</gold>"
+    entry: "<gray><time></gray> <white><territory></white> <white><faction></white> <gold><amount></gold> <gray><status></gray> <dark_gray><detail></dark_gray>"
+    empty: "<prefix><gray>No payouts with status <status>.</gray>"
+
+capture:
+  started: "<prefix><yellow><faction></yellow> <gray>started capturing</gray> <territory><gray>!</gray>"
+  challenge-started: "<prefix><yellow><faction></yellow> <gray>is challenging</gray> <white><owner></white> <gray>for</gray> <territory><gray>!</gray>"
+  contested: "<prefix><red><territory> is contested!</red>"
+  completed: "<prefix><green><faction></green> <gray>captured</gray> <territory><gray>!</gray>"
+  defended: "<prefix><green><faction></green> <gray>defended</gray> <territory> <gray>against</gray> <red><challenger></red><gray>!</gray>"
+  expired: "<prefix><gray><faction>'s control of</gray> <territory> <gray>has expired.</gray>"
+  revoked: "<prefix><gray><faction> lost</gray> <territory><gray>.</gray>"
+  failed:
+    abandoned: "<prefix><gray><faction>'s capture of</gray> <territory> <gray>failed.</gray>"
+    limit_reached: "<prefix><gray><faction> already holds as many territories as it can.</gray>"
+    ineligible: "<prefix><gray><faction> can no longer capture</gray> <territory><gray>.</gray>"
+
+raid:
+  faction-raidable: "<prefix><red><defender> is now raidable!</red> <gray>(broken by <attacker>)</gray>"
+
+druglab:
+  plant-denied: "<prefix><red>This plant would grow into land you cannot build in.</red>"
+  harvest-denied: "<prefix><red>You cannot harvest plants here.</red>"
+  fertilize-denied: "<prefix><red>You cannot fertilize plants here.</red>"
+  station-denied: "<prefix><red>You cannot use this station here.</red>"
+  factions-unavailable: "<prefix><red>Faction data is unavailable; try again shortly.</red>"
+
+bossbar:
+  available: "<territory> <gray>- available</gray>"
+  capturing: "<territory> <gray>-</gray> <yellow><capturer></yellow> <gray>capturing (<percent>%, <remaining> left)</gray>"
+  contested: "<territory> <red>- CONTESTED</red> <gray>(<percent>%)</gray>"
+  controlled: "<territory> <gray>- held by</gray> <green><owner></green> <gray>(<expires> left)</gray>"
+  cooldown: "<territory> <gray>- cooldown (<cooldown>)</gray>"
+
+actionbar:
+  capturing: "<yellow>Capturing <territory>: <percent>%</yellow>"
+  contested: "<red>Contested! Clear the zone to continue.</red>"
