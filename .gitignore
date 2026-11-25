@@ -25,3 +25,10 @@ server/
 *.db-wal
 *.db-shm
 *.log
+
+# Kept locally, not published
+THIRD-PARTY-NOTICES.md
+build.bat
+build.sh
+mvnw
+mvnw.cmd

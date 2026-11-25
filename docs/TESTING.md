@@ -2,7 +2,7 @@
 
 ## Result of the last run
 
-`build.bat` (Maven Wrapper, `clean verify`) on 2026-11-24:
+`mvn clean verify` on 2026-11-24:
 
 ```
 Tests run: 136, Failures: 0, Errors: 0, Skipped: 0
@@ -12,7 +12,7 @@ BUILD SUCCESS
 | Component | Version used |
 |---|---|
 | JDK | 25.0.3 |
-| Maven | 3.9.11 (wrapper) |
+| Maven | 3.9.11 |
 | Paper API | 26.3.build.249-stable (compile + MockBukkit) |
 | MockBukkit | mockbukkit-v26.3 4.124.0 |
 | FactionsUUID API | 4.6.0 (`dev.kitteh:factions`), interfaces mocked with Mockito |
@@ -22,7 +22,7 @@ BUILD SUCCESS
 | SQLite JDBC | 3.53.4.0 (real database files in temp folders) |
 | MySQL Connector/J | 9.6.0 (connection-failure test only) |
 
-Run it yourself: `build.bat`, `./build.sh` or `./mvnw verify`. Reports: `target/surefire-reports`.
+Run it yourself: `mvn verify`. Reports: `target/surefire-reports`.
 
 ## What was not run
 

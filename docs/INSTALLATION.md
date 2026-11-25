@@ -45,7 +45,7 @@ The JDBC drivers come from the Paper server jar (SQLite: `org.sqlite.JDBC`, MySQ
 
 ## Building from source
 
-Prerequisites: JDK 25, internet access for Maven dependencies.
+Prerequisites: JDK 25, Maven 3.9+, internet access for Maven dependencies.
 
 DrugLab is not published to a Maven repository, so install it into your local repository once:
 
@@ -54,17 +54,15 @@ cd ..\DrugLab
 mvn install -DskipTests
 ```
 
-Then build DrugRunTerritories:
+Then build DrugRunTerritories with Maven 3.9+:
 
 ```powershell
-.\build.bat
+mvn clean verify
 ```
 
-or on Linux/macOS `./build.sh`. The script checks for Java 25, compiles, runs all tests, fails on any error, and prints the jar path: `target/DrugRunTerritories-0.1.0-SNAPSHOT.jar`.
+This compiles, runs all tests, fails on any error, and produces `target/DrugRunTerritories-0.1.0-SNAPSHOT.jar`.
 
-The Maven Wrapper (`mvnw`, `mvnw.cmd`) downloads Maven 3.9.11 automatically. You don't need Maven installed.
-
-CI: `.github/workflows/build.yml` checks out DrugLab next to this repository, installs it, and runs `./mvnw verify`. For a private DrugLab repository, set the `DRUGLAB_TOKEN` secret (and `DRUGLAB_REPOSITORY` if it moves).
+CI: `.github/workflows/build.yml` checks out DrugLab next to this repository, installs it, and runs `mvn verify`. For a private DrugLab repository, set the `DRUGLAB_TOKEN` secret (and `DRUGLAB_REPOSITORY` if it moves).
 
 ## Dependencies bundled in the jar
 

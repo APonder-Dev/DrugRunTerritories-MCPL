@@ -42,7 +42,7 @@ jobs:
 
       - name: Build and test
         working-directory: DrugRunTerritories
-        run: ./mvnw -B clean verify
+        run: mvn -B clean verify
 
       - name: Upload test reports
         if: always()

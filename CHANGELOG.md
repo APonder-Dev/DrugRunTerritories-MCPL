@@ -27,7 +27,7 @@ First development build.
 - BossBars, ActionBars, MiniMessage announcements, sounds and particles; PlaceholderAPI expansion `drugrun`.
 - Built-in stand-ins for DrugRunCore's Files and Databases APIs: atomic YAML files with default merging and backups; HikariCP SQLite/MySQL/MariaDB storage with a bounded executor and versioned migrations.
 - Public `DrugRunTerritoriesApi` service.
-- Maven build with Maven Wrapper, `build.bat`, `build.sh`, GitHub Actions CI, and 136 automated tests.
+- Maven build, GitHub Actions CI, and 136 automated tests.
 
 ### Known limitations
 - DrugRunCore is not released; the plugin runs on its own config and storage stand-ins.

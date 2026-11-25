@@ -42,7 +42,7 @@ Known limitations:
 
 ## Documentation
 
-[Installation](docs/INSTALLATION.md) · [Configuration](docs/CONFIGURATION.md) · [Commands & placeholders](docs/COMMANDS.md) · [Permissions](docs/PERMISSIONS.md) · [Territories](docs/TERRITORIES.md) · [Raid mechanics](docs/RAID-MECHANICS.md) · [Economy](docs/ECONOMY.md) · [Progression](docs/PROGRESSION.md) · [FactionsUUID](docs/FACTIONS-INTEGRATION.md) · [DrugLab](docs/DRUGLAB-INTEGRATION.md) · [DrugRunCore](docs/DRUGRUNCORE-INTEGRATION.md) · [Testing](docs/TESTING.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Changelog](CHANGELOG.md) · [Third-party notices](THIRD-PARTY-NOTICES.md)
+[Installation](docs/INSTALLATION.md) · [Configuration](docs/CONFIGURATION.md) · [Commands & placeholders](docs/COMMANDS.md) · [Permissions](docs/PERMISSIONS.md) · [Territories](docs/TERRITORIES.md) · [Raid mechanics](docs/RAID-MECHANICS.md) · [Economy](docs/ECONOMY.md) · [Progression](docs/PROGRESSION.md) · [FactionsUUID](docs/FACTIONS-INTEGRATION.md) · [DrugLab](docs/DRUGLAB-INTEGRATION.md) · [DrugRunCore](docs/DRUGRUNCORE-INTEGRATION.md) · [Testing](docs/TESTING.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Changelog](CHANGELOG.md)
 
 ## Source layout
 
