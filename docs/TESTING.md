@@ -24,9 +24,26 @@ BUILD SUCCESS
 
 Run it yourself: `mvn verify`. Reports: `target/surefire-reports`.
 
+## Live Paper 26.3 run (2026-11-25/26)
+
+Paper 26.3 build 259 with FactionsUUID 4.7.2, DrugLab (patched), Vault, WorldGuard 7.0.21 on FAWE, PlaceholderAPI, LuckPerms, EssentialsX and ViaVersion/ViaBackwards. The player tests used a mineflayer bot on a localhost offline-mode copy of the test server.
+
+| Check | Result |
+|---|---|
+| Plugin startup, both migrations, every integration detected, clean shutdown | pass |
+| `/drugrun` commands, `admin debug`, `admin reload`, `drugrun` PlaceholderAPI expansion | pass |
+| TNT next to an arena block (control block outside destroyed) | pass, arena block and floor intact |
+| Falling sand into the arena (control lands outside) | pass, blocked |
+| Water flowing from outside into the arena (3 sources, bot nearby so chunks tick) | pass, flowed outside, kept out, every flow into the arena logged as cancelled |
+| Bot pours a water bucket inside the arena / outside | pass, refused / placed |
+| Bot mines a block inside the arena / outside | pass, kept / broken |
+| DrugLab `/druglab selftest` with DrugRunTerritories listening | pass, 92/92 |
+
+Water does not tick in force-loaded chunks without a player, so console-only water tests are not meaningful.
+
 ## What was not run
 
-- **Live Paper 26.3 server.** No test server with FactionsUUID, DrugLab, Vault and PlaceholderAPI was available in the build environment. Plugin startup, command registration, `paper-plugin.yml` loading, BossBars, PlaceholderAPI registration and Vault deposits were **not** exercised on a real server.
+- **Live gameplay with real players:** captures, contests, BossBars, faction claims, dealer sales and Vault payouts on the live server.
 - **Live MySQL/MariaDB.** Only SQLite was used for storage tests. MySQL was used only to prove an unreachable server fails startup.
 - **Spark profiling.** `LoadTest` measures the capture loop in isolation. Profile on a staging server before launch.
 - **WorldGuard** hook (`WorldGuardHook`) compiles against WorldGuard 7.0.11 but has no automated test.
@@ -67,7 +84,7 @@ Run it yourself: `mvn verify`. Reports: `target/surefire-reports`.
 | 28 | TNT vs shielded claims | ✅ | `ProtectionListenerTest.drugLabCrops`, `RaidPolicyTest` |
 | 29 | TNT across claim borders | ✅ | `ProtectionListenerTest.acrossBorder`, `plantUsesBase` |
 | 30 | TNT vs arenas | ✅ | `ProtectionListenerTest.arenaExplosion` |
-| 31 | Indirect block changes | ◐ | Fluids and pistons tested (`ProtectionListenerTest.indirect`). Fire, falling blocks, dispensers and tree growth handlers are not unit tested |
+| 31 | Indirect block changes | ◐ | Fluids and pistons unit tested; water, falling blocks and TNT verified live on Paper 26.3. Fire, dispensers and tree growth not tested |
 | 32 | Protected DrugLab crops | ✅ | `ProtectionListenerTest.drugLabCrops` |
 | 33 | Vulnerable DrugLab crops | ✅ | same |
 | 34 | Protected stations | ✅ | `ProtectionListenerTest.stationsAndFailClosed`, `DrugLabIntegrationTest.stationAccess` |
