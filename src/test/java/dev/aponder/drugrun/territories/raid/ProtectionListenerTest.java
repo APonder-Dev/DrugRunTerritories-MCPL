@@ -180,4 +180,64 @@ class ProtectionListenerTest {
         settings = dev.aponder.drugrun.territories.config.SettingsLoader.load(yaml).settings();
         assertEquals(1, explode(block(1005, 64, 1005)).size());
     }
+
+    /** Collects log records for assertions. */
+    private static final class Captured extends java.util.logging.Handler {
+        final List<java.util.logging.LogRecord> records = new ArrayList<>();
+
+        @Override
+        public void publish(java.util.logging.LogRecord record) {
+            records.add(record);
+        }
+
+        @Override
+        public void flush() {
+        }
+
+        @Override
+        public void close() {
+        }
+    }
+
+    private static java.util.logging.Logger logger(Captured captured) {
+        java.util.logging.Logger log = java.util.logging.Logger.getAnonymousLogger();
+        log.setUseParentHandlers(false);
+        log.addHandler(captured);
+        return log;
+    }
+
+    @Test
+    @DisplayName("A flow into an arena that another plugin re-allowed is reported once, then rate-limited")
+    void leakWarning() {
+        Captured captured = new Captured();
+        ArenaProtectionListener listener = new ArenaProtectionListener(() -> registry, () -> settings, logger(captured));
+        BlockFromToEvent reallowed = new BlockFromToEvent(block(999, 64, 1010), block(1000, 64, 1010));
+        listener.onFlow(reallowed);
+        assertTrue(reallowed.isCancelled());
+        reallowed.setCancelled(false); // another plugin overrides
+        listener.onFlowResult(reallowed);
+        listener.onFlowResult(reallowed);
+        assertEquals(1, captured.records.size());
+        assertEquals(java.util.logging.Level.WARNING, captured.records.getFirst().getLevel());
+        assertTrue(captured.records.getFirst().getMessage().contains("docks"));
+        BlockFromToEvent inside = new BlockFromToEvent(block(1001, 64, 1010), block(1002, 64, 1010));
+        BlockFromToEvent outside = new BlockFromToEvent(block(10, 64, 10), block(11, 64, 10));
+        listener.onFlowResult(inside);
+        listener.onFlowResult(outside);
+        assertEquals(1, captured.records.size(), "flows inside an arena or far away are not warnings");
+    }
+
+    @Test
+    @DisplayName("With general.debug on, flows touching an arena are traced with their decision")
+    void debugTrace() {
+        Captured captured = new Captured();
+        org.bukkit.configuration.file.YamlConfiguration yaml = Fixtures.bundled("config.yml");
+        yaml.set("general.debug", true);
+        settings = dev.aponder.drugrun.territories.config.SettingsLoader.load(yaml).settings();
+        ArenaProtectionListener listener = new ArenaProtectionListener(() -> registry, () -> settings, logger(captured));
+        listener.onFlow(new BlockFromToEvent(block(999, 64, 1010), block(1000, 64, 1010)));
+        listener.onFlow(new BlockFromToEvent(block(10, 64, 10), block(11, 64, 10)));
+        assertEquals(1, captured.records.size(), "only arena-related flows are traced");
+        assertTrue(captured.records.getFirst().getMessage().contains("cancelled, enters arena docks"));
+    }
 }

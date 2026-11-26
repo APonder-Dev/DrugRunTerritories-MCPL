@@ -16,4 +16,5 @@
 | Payouts marked UNKNOWN | The server stopped while a payout was in flight. They are never retried. Check the player's balance and pay manually if needed. |
 | A DrugLab plant stopped growing | Its next stage would enter another faction's claim or an arena. Growth resumes when that land is unclaimed or the claim owner matches the plant's base. |
 | Reload refused | The listed problems must be fixed first. The old configuration stays active. `storage.*` changes always need a restart. |
+| `Fluid flowed into arena … another plugin re-allowed the flow` | Arena protection cancelled a fluid flow into an arena, but a later plugin un-cancelled it. Find the plugin that handles `BlockFromToEvent` at HIGH/HIGHEST priority. Set `general.debug: true` to trace every arena-related flow decision. |
 | `[missing message: key]` in chat | `messages.yml` lacks the key. It is added on the next start or reload, unless you deleted it on purpose. Set a message to `''` to silence it. |

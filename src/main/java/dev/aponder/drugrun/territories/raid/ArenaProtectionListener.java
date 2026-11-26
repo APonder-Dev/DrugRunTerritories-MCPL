@@ -9,6 +9,7 @@ import dev.aponder.drugrun.territories.territory.TerritoryRegistry;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.logging.Logger;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -51,12 +52,23 @@ public final class ArenaProtectionListener implements Listener {
     /** Lets a player build and break inside arenas. */
     public static final String BYPASS_PERMISSION = "drugrun.territories.bypass.arena";
 
+    /** Shortest gap between two "fluid entered an arena" warnings. */
+    private static final long LEAK_WARNING_INTERVAL_MS = 10_000;
+
     private final Supplier<TerritoryRegistry> registry;
     private final Supplier<Settings> settings;
+    private final Logger logger;
+    private long lastLeakWarning;
+    private int suppressedLeakWarnings;
 
     public ArenaProtectionListener(Supplier<TerritoryRegistry> registry, Supplier<Settings> settings) {
+        this(registry, settings, Logger.getLogger(ArenaProtectionListener.class.getName()));
+    }
+
+    public ArenaProtectionListener(Supplier<TerritoryRegistry> registry, Supplier<Settings> settings, Logger logger) {
         this.registry = registry;
         this.settings = settings;
+        this.logger = logger;
     }
 
     // ---- players ------------------------------------------------------------------------------
@@ -106,9 +118,45 @@ public final class ArenaProtectionListener implements Listener {
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onFlow(BlockFromToEvent event) {
         Optional<TerritoryDefinition> to = arena(event.getToBlock());
-        if (to.isPresent() && !sameArena(to.get(), event.getBlock())) {
+        boolean blocked = to.isPresent() && !sameArena(to.get(), event.getBlock());
+        if (blocked) {
             event.setCancelled(true);
         }
+        if (settings.get().debug() && (to.isPresent() || arena(event.getBlock()).isPresent())) {
+            logger.info("[debug] flow " + describe(event.getBlock()) + " -> " + describe(event.getToBlock()) + " (" + event.getFace()
+                    + ", " + event.getBlock().getType() + "): " + (blocked ? "cancelled, enters arena " + to.get().id()
+                    : to.isPresent() ? "allowed, already inside arena " + to.get().id() : "allowed, leaves or stays outside"));
+        }
+    }
+
+    /**
+     * Diagnostic only: after every plugin has handled the event, warn when a fluid is still
+     * allowed to flow into an arena from outside. That means another plugin un-cancelled the
+     * event (or arena protection is off). Rate-limited; never changes the event.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onFlowResult(BlockFromToEvent event) {
+        if (event.isCancelled()) {
+            return;
+        }
+        Optional<TerritoryDefinition> to = arena(event.getToBlock());
+        if (to.isEmpty() || sameArena(to.get(), event.getBlock())) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastLeakWarning < LEAK_WARNING_INTERVAL_MS) {
+            suppressedLeakWarnings++;
+            return;
+        }
+        logger.warning("Fluid flowed into arena " + to.get().id() + " at " + describe(event.getToBlock()) + " from "
+                + describe(event.getBlock()) + " although arena protection cancels it; another plugin re-allowed the flow."
+                + (suppressedLeakWarnings > 0 ? " (" + suppressedLeakWarnings + " similar warnings suppressed)" : ""));
+        lastLeakWarning = now;
+        suppressedLeakWarnings = 0;
+    }
+
+    private static String describe(Block block) {
+        return block.getWorld().getName() + " " + block.getX() + "," + block.getY() + "," + block.getZ();
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)

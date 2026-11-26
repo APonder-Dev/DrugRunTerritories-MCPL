@@ -181,7 +181,7 @@ public final class DrugRunTerritoriesPlugin extends JavaPlugin implements Listen
         var pm = getServer().getPluginManager();
         pm.registerEvents(this, this);
         pm.registerEvents(new ExplosionListener(territories::registry, () -> settings, factions, () -> drugLabBlocks), this);
-        pm.registerEvents(new ArenaProtectionListener(territories::registry, () -> settings), this);
+        pm.registerEvents(new ArenaProtectionListener(territories::registry, () -> settings, getLogger()), this);
         pm.registerEvents(new FactionChangeListener(territories, id -> getLogger().info("Faction " + id
                 + " disbanded; its territories were released.")), this);
         pm.registerEvents(new RaidVictoryListener(this, factions, progression, () -> settings, messages, System::currentTimeMillis), this);
