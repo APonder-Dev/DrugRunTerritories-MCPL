@@ -32,3 +32,4 @@ build.bat
 build.sh
 mvnw
 mvnw.cmd
+.mvn/
