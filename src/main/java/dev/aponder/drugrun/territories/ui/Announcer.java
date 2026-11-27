@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
+import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import org.bukkit.Bukkit;
@@ -39,21 +40,26 @@ public final class Announcer implements CaptureListener {
     private final Supplier<Settings> settings;
     private final Logger logger;
     private final LongSupplier clock;
+    /** everyone who hears server-wide announcements: the server (all players and the console) in production */
+    private final Supplier<? extends Audience> everyone;
     /** "territory|kind" -> epoch millis of the last announcement */
     private final Map<String, Long> lastAnnounced = new HashMap<>();
     /** territories whose current capture start was not announced */
     private final Set<String> quietStarts = new HashSet<>();
 
     public Announcer(Messages messages, FactionNames names, Supplier<Settings> settings, Logger logger) {
-        this(messages, names, settings, logger, System::currentTimeMillis);
+        this(messages, names, settings, logger, System::currentTimeMillis, Bukkit::getServer);
     }
 
-    public Announcer(Messages messages, FactionNames names, Supplier<Settings> settings, Logger logger, LongSupplier clock) {
+    /** For tests: a fixed clock, and an audience that stands in for the whole server. */
+    Announcer(Messages messages, FactionNames names, Supplier<Settings> settings, Logger logger, LongSupplier clock,
+            Supplier<? extends Audience> everyone) {
         this.messages = messages;
         this.names = names;
         this.settings = settings;
         this.logger = logger;
         this.clock = clock;
+        this.everyone = everyone;
     }
 
     /** @return whether this kind of announcement for the territory is outside its repeat cooldown (and records it) */
@@ -109,14 +115,14 @@ public final class Announcer implements CaptureListener {
 
     private void broadcast(String key, net.kyori.adventure.text.minimessage.tag.resolver.TagResolver... tags) {
         if (messages.has(key)) {
-            Bukkit.getServer().sendMessage(messages.get(key, tags));
+            everyone.get().sendMessage(messages.get(key, tags));
         }
     }
 
     private void sound(String name, Settings.Announcements cfg) {
         Sound sound = parseSound(name, cfg);
         if (sound != null) {
-            Bukkit.getServer().playSound(sound);
+            everyone.get().playSound(sound);
         }
     }
 

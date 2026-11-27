@@ -12,6 +12,7 @@ import dev.aponder.drugrun.territories.territory.CaptureEvent;
 import dev.aponder.drugrun.territories.territory.TerritoryDefinition;
 import dev.aponder.drugrun.territories.territory.TerritoryState;
 import java.util.Map;
+import net.kyori.adventure.audience.Audience;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +42,8 @@ class AnnouncerTest {
         Messages messages = new Messages();
         messages.load(Fixtures.bundled("messages.yml"));
         Settings settings = Fixtures.settings();
-        announcer = new Announcer(messages, new FactionNames(factions), () -> settings, Fixtures.LOG, clock::get);
+        announcer = new Announcer(messages, new FactionNames(factions), () -> settings, Fixtures.LOG, clock::get,
+                () -> Audience.audience(server.getOnlinePlayers()));
     }
 
     @AfterEach
