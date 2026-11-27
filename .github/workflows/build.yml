@@ -51,8 +51,4 @@ jobs:
           name: surefire-reports
           path: DrugRunTerritories/target/surefire-reports
 
-      - name: Upload plugin JAR
-        uses: actions/upload-artifact@v4
-        with:
-          name: DrugRunTerritories
-          path: DrugRunTerritories/target/DrugRunTerritories-*.jar
+      # The plugin JAR is deliberately not uploaded: this repository is public and builds are not released yet.
