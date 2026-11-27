@@ -75,9 +75,28 @@ public final class BukkitParticipantSource implements ParticipantSource {
         if (mode == GameMode.SPECTATOR || (cfg.excludeCreative() && mode == GameMode.CREATIVE)) {
             return false;
         }
-        if (player.hasMetadata("vanished") && player.getMetadata("vanished").stream().anyMatch(v -> v.asBoolean())) {
+        if (vanished(player)) {
             return false;
         }
         return player.hasPermission(CAPTURE_PERMISSION);
+    }
+
+    /**
+     * Whether a vanish plugin has hidden this player. EssentialsX, SuperVanish, PremiumVanish and
+     * VanishNoPacket all publish this as a {@code "vanished"} metadata flag, and Paper has no
+     * replacement for reading another plugin's flag, so this deliberately uses the deprecated
+     * metadata API. It is kept in this one method so the suppression covers nothing else.
+     */
+    @SuppressWarnings("deprecation")
+    static boolean vanished(Player player) {
+        if (!player.hasMetadata("vanished")) {
+            return false;
+        }
+        for (org.bukkit.metadata.MetadataValue value : player.getMetadata("vanished")) {
+            if (value.asBoolean()) {
+                return true;
+            }
+        }
+        return false;
     }
 }
