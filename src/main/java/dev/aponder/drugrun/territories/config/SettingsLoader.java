@@ -74,7 +74,11 @@ public final class SettingsLoader {
                 intIn(root, c + "maximum-per-faction", 2, 1, 100),
                 Duration.ofSeconds(intIn(root, c + "afk-timeout-seconds", 120, 0, 3_600)),
                 root.getBoolean(c + "exclude-creative", true),
-                root.getBoolean(c + "allow-challenges", true));
+                root.getBoolean(c + "allow-challenges", true),
+                Duration.ofSeconds(intIn(root, c + "restart-grace-seconds", 120, 0, 1_800)));
+        if (capture.duration().compareTo(capture.ownershipDuration()) >= 0) {
+            errors.add(c + "duration-seconds must be shorter than ownership-duration-hours; a capture would outlast the ownership it wins");
+        }
         if (capture.contestedBehavior() == Settings.ContestedBehavior.DECAY && capture.decayPerSecond() <= 0) {
             errors.add(c + "contested-behavior is DECAY but decay-per-second is 0; progress would never drain");
         }
@@ -134,7 +138,8 @@ public final class SettingsLoader {
                 root.getString(a + "particles.type", "HAPPY_VILLAGER"),
                 intIn(root, a + "particles.count", 20, 0, 500),
                 root.getBoolean(a + "bossbar.enabled", true),
-                root.getBoolean(a + "actionbar.enabled", true));
+                root.getBoolean(a + "actionbar.enabled", true),
+                Duration.ofSeconds(intIn(root, a + "repeat-cooldown-seconds", 30, 0, 3_600)));
 
         StorageSettings storage = parseStorage(root);
 

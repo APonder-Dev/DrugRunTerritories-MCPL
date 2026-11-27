@@ -146,6 +146,26 @@ class CaptureEngineTest {
     }
 
     @Test
+    @DisplayName("Restart grace holds an under-strength capture instead of draining or failing it")
+    void restartGraceHolds() {
+        CaptureRules noDecay = Fixtures.rules(Settings.ContestedBehavior.PAUSE, Duration.ofMinutes(60), false);
+        TerritoryState s = run(TerritoryState.available(T), Fixtures.rules(), T0, 30, Map.of("a", 2)).state();
+        for (CaptureRules rules : List.of(Fixtures.rules(), noDecay)) {
+            CaptureEngine.Result held = CaptureEngine.tick(s, rules,
+                    new CaptureEngine.Tick(T0 + 31_000, 1, true, Map.of(), eligibility, true));
+            assertEquals(s, held.state());
+            assertTrue(held.events().isEmpty());
+        }
+        // Grace never stops a contest or a completion.
+        CaptureEngine.Result contested = CaptureEngine.tick(s, Fixtures.rules(),
+                new CaptureEngine.Tick(T0 + 31_000, 1, true, Map.of("a", 2, "b", 1), eligibility, true));
+        assertEquals(CaptureState.CONTESTED, contested.state().state());
+        CaptureEngine.Result progress = CaptureEngine.tick(s, Fixtures.rules(),
+                new CaptureEngine.Tick(T0 + 31_000, 1, true, Map.of("a", 2), eligibility, true));
+        assertEquals(s.progressSeconds() + 1, progress.state().progressSeconds(), 1e-9);
+    }
+
+    @Test
     @DisplayName("Multiple competing factions can never both complete; only the capturer can")
     void multipleFactions() {
         TerritoryState s = run(TerritoryState.available(T), Fixtures.rules(), T0, 60, Map.of("a", 2)).state();

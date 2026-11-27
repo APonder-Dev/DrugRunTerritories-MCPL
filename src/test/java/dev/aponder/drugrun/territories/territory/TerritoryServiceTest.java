@@ -188,6 +188,43 @@ class TerritoryServiceTest {
     }
 
     @Test
+    @DisplayName("Restart grace holds a restored capture while its players reconnect, but not a capture started after the restart")
+    void restartGraceOnlyForRestoredCaptures() {
+        presence.put("a", Map.of("1", 2));
+        ticks(6);
+        service.saveAll().join();
+        double saved = service.state("a").orElseThrow().progressSeconds();
+        presence.clear();
+        TerritoryService restarted = newService(service.registry().all());
+        restarted.initialize(new TerritoryRepository(db).loadAll().join());
+        for (int i = 0; i < 10; i++) {
+            clock.addAndGet(1_000);
+            restarted.tick();
+        }
+        assertEquals(saved, restarted.state("a").orElseThrow().progressSeconds(), 1e-9, "held during the grace");
+        // The capturers come back and complete; a new capture after that gets no grace.
+        presence.put("a", Map.of("1", 2));
+        for (int i = 0; i < 700 && restarted.state("a").orElseThrow().state() != CaptureState.CONTROLLED; i++) {
+            clock.addAndGet(1_000);
+            restarted.tick();
+        }
+        assertEquals(CaptureState.CONTROLLED, restarted.state("a").orElseThrow().state());
+        restarted.reset("a");
+        presence.put("a", Map.of("2", 2));
+        clock.addAndGet(1_000);
+        restarted.tick();
+        clock.addAndGet(1_000);
+        restarted.tick();
+        assertEquals(CaptureState.CAPTURING, restarted.state("a").orElseThrow().state());
+        presence.clear();
+        for (int i = 0; i < 5; i++) {
+            clock.addAndGet(1_000);
+            restarted.tick();
+        }
+        assertEquals(CaptureState.AVAILABLE, restarted.state("a").orElseThrow().state(), "the new capture drains normally");
+    }
+
+    @Test
     @DisplayName("Ownership that expired while the server was down is released on the first tick")
     void expiredDuringDowntime() {
         captureAll("a", "1");

@@ -9,7 +9,12 @@ import dev.aponder.drugrun.territories.territory.CaptureListener;
 import dev.aponder.drugrun.territories.territory.CaptureZone;
 import dev.aponder.drugrun.territories.territory.TerritoryDefinition;
 import dev.aponder.drugrun.territories.territory.TerritoryState;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 import net.kyori.adventure.key.Key;
@@ -19,19 +24,48 @@ import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.World;
 
-/** Broadcasts capture events with configurable messages, sounds and particles. */
+/**
+ * Broadcasts capture events with configurable messages, sounds and particles.
+ *
+ * <p>Starts and contests can flap when players hover at the zone edge, so each territory
+ * announces them at most once per {@code announcements.repeat-cooldown-seconds}. A failure is
+ * only announced when its start was. Completions, defences, expiries and revocations are always
+ * announced. The contested sound plays only to players inside that territory.
+ */
 public final class Announcer implements CaptureListener {
 
     private final Messages messages;
     private final FactionNames names;
     private final Supplier<Settings> settings;
     private final Logger logger;
+    private final LongSupplier clock;
+    /** "territory|kind" -> epoch millis of the last announcement */
+    private final Map<String, Long> lastAnnounced = new HashMap<>();
+    /** territories whose current capture start was not announced */
+    private final Set<String> quietStarts = new HashSet<>();
 
     public Announcer(Messages messages, FactionNames names, Supplier<Settings> settings, Logger logger) {
+        this(messages, names, settings, logger, System::currentTimeMillis);
+    }
+
+    public Announcer(Messages messages, FactionNames names, Supplier<Settings> settings, Logger logger, LongSupplier clock) {
         this.messages = messages;
         this.names = names;
         this.settings = settings;
         this.logger = logger;
+        this.clock = clock;
+    }
+
+    /** @return whether this kind of announcement for the territory is outside its repeat cooldown (and records it) */
+    private boolean due(String territoryId, String kind, Settings.Announcements cfg) {
+        long now = clock.getAsLong();
+        String key = territoryId + "|" + kind;
+        Long last = lastAnnounced.get(key);
+        if (last != null && now - last < cfg.repeatCooldown().toMillis()) {
+            return false;
+        }
+        lastAnnounced.put(key, now);
+        return true;
     }
 
     @Override
@@ -39,18 +73,28 @@ public final class Announcer implements CaptureListener {
         Settings.Announcements cfg = settings.get().announcements();
         var t = Messages.mini("territory", territory.displayName());
         switch (event) {
-            case CaptureEvent.Started s when cfg.captureStarted() -> broadcast(s.challenge() ? "capture.challenge-started" : "capture.started",
-                    t, Messages.text("faction", names.name(s.factionId())), Messages.text("owner", names.name(state.ownerFactionId())));
+            case CaptureEvent.Started s when cfg.captureStarted() -> {
+                if (!due(territory.id(), "start", cfg)) {
+                    quietStarts.add(territory.id());
+                    return;
+                }
+                quietStarts.remove(territory.id());
+                broadcast(s.challenge() ? "capture.challenge-started" : "capture.started",
+                        t, Messages.text("faction", names.name(s.factionId())), Messages.text("owner", names.name(state.ownerFactionId())));
+            }
             case CaptureEvent.Contested c when cfg.captureContested() -> {
+                if (!due(territory.id(), "contested", cfg)) {
+                    return;
+                }
                 broadcast("capture.contested", t, Messages.text("faction", names.name(c.capturingFactionId())));
-                sound(cfg.contestedSound(), cfg);
+                localSound(territory, cfg.contestedSound(), cfg);
             }
             case CaptureEvent.Completed c when cfg.captureCompleted() -> {
                 broadcast("capture.completed", t, Messages.text("faction", names.name(c.factionId())));
                 sound(cfg.completedSound(), cfg);
                 particles(territory, cfg);
             }
-            case CaptureEvent.Failed f when cfg.captureStarted() -> broadcast("capture.failed." + f.reason().name().toLowerCase(Locale.ROOT),
+            case CaptureEvent.Failed f when cfg.captureStarted() && !quietStarts.remove(territory.id()) -> broadcast("capture.failed." + f.reason().name().toLowerCase(Locale.ROOT),
                     t, Messages.text("faction", names.name(f.factionId())));
             case CaptureEvent.Defended d when cfg.captureCompleted() -> broadcast("capture.defended", t,
                     Messages.text("faction", names.name(d.ownerFactionId())), Messages.text("challenger", names.name(d.challengerFactionId())));
@@ -70,18 +114,37 @@ public final class Announcer implements CaptureListener {
     }
 
     private void sound(String name, Settings.Announcements cfg) {
-        if (name == null || name.isBlank()) {
+        Sound sound = parseSound(name, cfg);
+        if (sound != null) {
+            Bukkit.getServer().playSound(sound);
+        }
+    }
+
+    /** Plays a sound only to players inside the territory's region. */
+    private void localSound(TerritoryDefinition territory, String name, Settings.Announcements cfg) {
+        Sound sound = parseSound(name, cfg);
+        World world = Bukkit.getWorld(territory.world());
+        if (sound == null || world == null) {
             return;
         }
-        Key key;
+        for (org.bukkit.entity.Player p : world.getPlayers()) {
+            Location l = p.getLocation();
+            if (territory.region().contains(world.getName(), l.getBlockX(), l.getBlockY(), l.getBlockZ())) {
+                p.playSound(sound);
+            }
+        }
+    }
+
+    private Sound parseSound(String name, Settings.Announcements cfg) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
         try {
-            key = Key.key(name.trim().toLowerCase(Locale.ROOT));
+            return Sound.sound(Key.key(name.trim().toLowerCase(Locale.ROOT)), Sound.Source.MASTER, cfg.volume(), cfg.pitch());
         } catch (RuntimeException e) {
             logger.warning("Invalid sound " + name);
-            return;
+            return null;
         }
-        Sound sound = Sound.sound(key, Sound.Source.MASTER, cfg.volume(), cfg.pitch());
-        Bukkit.getServer().playSound(sound);
     }
 
     private void particles(TerritoryDefinition territory, Settings.Announcements cfg) {

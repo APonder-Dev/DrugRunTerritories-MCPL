@@ -48,6 +48,13 @@ public final class TerritoryService {
     private final Supplier<LocalTime> timeOfDay;
     private final Logger logger;
     private final List<CaptureListener> listeners = new CopyOnWriteArrayList<>();
+    private final List<OwnershipEndListener> ownershipEndListeners = new CopyOnWriteArrayList<>();
+
+    /** Told about an ownership period just before it ends, with the last state that held it. */
+    @FunctionalInterface
+    public interface OwnershipEndListener {
+        void ownershipEnded(TerritoryDefinition territory, TerritoryState last, long endedAt);
+    }
 
     private volatile Settings settings;
     private volatile TerritoryRegistry registry;
@@ -57,6 +64,10 @@ public final class TerritoryService {
     private long lastTick = -1;
     private long lastProgressSave;
     private long lastControlFlush;
+    /** Until this time, under-strength captures restored from storage are held, not drained. */
+    private long graceUntil;
+    /** Territories whose capture was in progress when the server stopped; only these get the restart grace. */
+    private final Set<String> restoredCaptures = new HashSet<>();
 
     public TerritoryService(Settings settings, TerritoryRegistry registry, TerritoryRepository repository,
                             FactionProvider factions, ProgressionService progression, ParticipantSource participants,
@@ -77,6 +88,10 @@ public final class TerritoryService {
         listeners.add(listener);
     }
 
+    public void addOwnershipEndListener(OwnershipEndListener listener) {
+        ownershipEndListeners.add(listener);
+    }
+
     /** Installs stored state (startup). Territories without stored state start AVAILABLE. */
     public void initialize(Map<String, TerritoryState> stored) {
         states.clear();
@@ -87,6 +102,13 @@ public final class TerritoryService {
         lastProgressSave = now;
         lastControlFlush = now;
         lastTick = -1;
+        graceUntil = now + settings.capture().restartGrace().toMillis();
+        restoredCaptures.clear();
+        states.forEach((id, s) -> {
+            if (s.state().capturing()) {
+                restoredCaptures.add(id);
+            }
+        });
     }
 
     // ---- queries ------------------------------------------------------------------------------
@@ -161,7 +183,7 @@ public final class TerritoryService {
                 }
                 Map<String, Integer> present = participants.count(def, now);
                 CaptureEngine.Tick tick = new CaptureEngine.Tick(now, Math.max(0, elapsed), def.scheduleOpen(time), present,
-                        eligibility(def));
+                        eligibility(def), now < graceUntil && restoredCaptures.contains(def.id()));
                 result = CaptureEngine.tick(before, def.rules(cfg.capture()), tick);
             } catch (FactionLookupException e) {
                 // Fail closed: no progress, no completion while factions cannot be checked.
@@ -174,6 +196,10 @@ public final class TerritoryService {
                 continue;
             }
             apply(def, before, result);
+            if (!result.state().state().capturing() || !java.util.Objects.equals(before.capturingFactionId(),
+                    result.state().capturingFactionId())) {
+                restoredCaptures.remove(def.id());
+            }
             if (result.state().state() == CaptureState.CONTROLLED && result.state().owned()) {
                 controlSeconds.merge(result.state().ownerFactionId(), elapsed, Double::sum);
             }
@@ -218,6 +244,16 @@ public final class TerritoryService {
 
     private void apply(TerritoryDefinition def, TerritoryState before, CaptureEngine.Result result) {
         TerritoryState after = result.state();
+        if (before.owned() && !java.util.Objects.equals(before.ownershipId(), after.ownershipId())) {
+            long now = clock.getAsLong();
+            for (OwnershipEndListener listener : ownershipEndListeners) {
+                try {
+                    listener.ownershipEnded(def, before, now);
+                } catch (RuntimeException e) {
+                    logger.log(Level.SEVERE, "Ownership-end listener failed for " + def.id(), e);
+                }
+            }
+        }
         if (!after.equals(before)) {
             states.put(def.id(), after);
             boolean structural = after.state() != before.state() || !java.util.Objects.equals(after.ownerFactionId(), before.ownerFactionId())

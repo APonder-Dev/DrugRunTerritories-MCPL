@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.ToLongFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,6 +21,10 @@ import java.util.logging.Logger;
  * change updates that copy and is written to storage as an increment in the background. When
  * progression is disabled in config, statistics are still counted but no XP or reputation is
  * granted.
+ *
+ * <p>With {@link #enableBatching()}, increments are merged per faction and written by
+ * {@link #flush()} (the plugin calls it every few seconds and on shutdown), so a busy farm does
+ * not queue one database write per harvest. A failed write is merged back and retried.
  */
 public final class ProgressionService {
 
@@ -30,6 +35,9 @@ public final class ProgressionService {
     private final Map<String, Long> lastRaidVictory = new HashMap<>();
     private Settings.Progression settings;
     private int baseTerritoryLimit;
+    /** faction id -> increments not yet written (only used when batching); guarded by itself */
+    private final Map<String, ProgressDelta> pending = new HashMap<>();
+    private volatile boolean batching;
 
     public ProgressionService(ProgressionRepository repository, Settings.Progression settings, int baseTerritoryLimit, Logger logger) {
         this.repository = repository;
@@ -81,8 +89,51 @@ public final class ProgressionService {
             return;
         }
         cache.put(factionId, get(factionId).plus(effective));
-        repository.add(factionId, effective).exceptionally(t -> {
-            logger.log(Level.SEVERE, "Could not save progression for faction " + factionId + "; the in-memory value is kept", t);
+        if (batching) {
+            synchronized (pending) {
+                pending.merge(factionId, effective, ProgressDelta::plus);
+            }
+            return;
+        }
+        write(factionId, effective, false);
+    }
+
+    /** Switches to batched writes; call {@link #flush()} regularly and on shutdown. */
+    public void enableBatching() {
+        batching = true;
+    }
+
+    /** Writes every pending increment. Safe to call when nothing is pending. */
+    public CompletableFuture<Void> flush() {
+        Map<String, ProgressDelta> batch;
+        synchronized (pending) {
+            if (pending.isEmpty()) {
+                return CompletableFuture.completedFuture(null);
+            }
+            batch = new HashMap<>(pending);
+            pending.clear();
+        }
+        List<CompletableFuture<Void>> writes = new ArrayList<>();
+        batch.forEach((faction, delta) -> writes.add(write(faction, delta, true)));
+        return CompletableFuture.allOf(writes.toArray(CompletableFuture[]::new));
+    }
+
+    private CompletableFuture<Void> write(String factionId, ProgressDelta delta, boolean retry) {
+        CompletableFuture<Void> written;
+        try {
+            written = repository.add(factionId, delta);
+        } catch (RuntimeException e) {
+            written = CompletableFuture.failedFuture(e);
+        }
+        return written.exceptionally(t -> {
+            if (retry && batching) {
+                logger.log(Level.WARNING, "Could not save progression for faction " + factionId + "; retrying with the next batch", t);
+                synchronized (pending) {
+                    pending.merge(factionId, delta, ProgressDelta::plus);
+                }
+            } else {
+                logger.log(Level.SEVERE, "Could not save progression for faction " + factionId + "; the in-memory value is kept", t);
+            }
             return null;
         });
     }
@@ -144,6 +195,9 @@ public final class ProgressionService {
     /** Clears a faction's progression (admin command or disband cleanup). */
     public void reset(String factionId) {
         cache.remove(factionId);
+        synchronized (pending) {
+            pending.remove(factionId);
+        }
         lastRaidVictory.keySet().removeIf(k -> k.startsWith(factionId + "|"));
         repository.delete(factionId).exceptionally(t -> {
             logger.log(Level.SEVERE, "Could not delete progression for faction " + factionId, t);

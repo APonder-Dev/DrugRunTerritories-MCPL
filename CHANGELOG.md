@@ -6,6 +6,18 @@ All notable changes to DrugRunTerritories. Versions follow [Semantic Versioning]
 
 First development build.
 
+### Fixed (QA pass, 2026-11-27)
+- The last income period of an ownership was usually lost: ownership expired (or changed hands) up to 30 seconds before the
+  income check saw that period. Periods that finished before an ownership ended are now settled when it ends.
+- `recipient: ONLINE_MEMBERS` lost the payout when no member was online; it now pays the leader instead.
+- Players hovering at a zone edge could make start/fail and contested messages repeat every second. They now repeat at most
+  once per `announcements.repeat-cooldown-seconds` (default 30) per territory. The contested sound plays only inside that territory.
+- After a restart, a capture in progress drained or failed before its players could reconnect. It is now held for
+  `territories.capture.restart-grace-seconds` (default 120). Only captures that were running at shutdown get the grace.
+- Progression wrote one database row per harvest, sale and job. Writes are now merged per faction and flushed every
+  5 seconds and on shutdown, with failed writes retried.
+- A capture duration equal to or longer than the ownership duration is rejected at load.
+
 ### Added (DrugLab hooks)
 - CROP_GROWTH and PROCESSING_SPEED territory bonuses now apply through DrugLab's new `ModifierProvider` service.
 - Explosion drop modes use DrugLab's new `PlantDestroyEvent`.

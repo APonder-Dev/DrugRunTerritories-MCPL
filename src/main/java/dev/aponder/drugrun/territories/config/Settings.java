@@ -58,7 +58,8 @@ public record Settings(
             int maximumPerFaction,
             Duration afkTimeout,
             boolean excludeCreative,
-            boolean allowChallenges) {
+            boolean allowChallenges,
+            Duration restartGrace) {
     }
 
     /** Bonus stacking and dealer-sale rules. */
@@ -163,7 +164,8 @@ public record Settings(
             String particleType,
             int particleCount,
             boolean bossBar,
-            boolean actionBar) {
+            boolean actionBar,
+            Duration repeatCooldown) {
     }
 
     /** Thread-pool and save-interval tuning. */

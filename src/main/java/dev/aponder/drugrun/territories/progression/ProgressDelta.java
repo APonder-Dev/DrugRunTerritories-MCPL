@@ -57,6 +57,13 @@ public record ProgressDelta(long xp, long reputation, int captures, int defenses
         return new ProgressDelta(0, 0, 0, 0, 0, 0, 0, amount);
     }
 
+    /** @return the sum of this and {@code o} */
+    public ProgressDelta plus(ProgressDelta o) {
+        return new ProgressDelta(xp + o.xp, reputation + o.reputation, captures + o.captures, defenses + o.defenses,
+                raidVictories + o.raidVictories, controlSeconds + o.controlSeconds, harvests + o.harvests, income + o.income,
+                itemsSold + o.itemsSold, salesValue + o.salesValue, jobsProcessed + o.jobsProcessed);
+    }
+
     public boolean empty() {
         return xp == 0 && reputation == 0 && captures == 0 && defenses == 0 && raidVictories == 0 && controlSeconds == 0
                 && harvests == 0 && income == 0 && itemsSold == 0 && salesValue == 0 && jobsProcessed == 0;

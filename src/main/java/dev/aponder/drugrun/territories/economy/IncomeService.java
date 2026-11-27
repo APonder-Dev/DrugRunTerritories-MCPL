@@ -43,6 +43,10 @@ import org.bukkit.entity.Player;
  * </ol>
  * A crash between steps 1 and 4 leaves the row PENDING; on the next start it becomes UNKNOWN and
  * is reported, never retried.
+ *
+ * <p>Periods are checked every 30 seconds, but ownership can end between checks (it expires, a
+ * challenger completes, an admin acts). {@link #ownershipEnded} settles the periods that finished
+ * before that moment, so the final period of an ownership is not lost to timing.
  */
 public final class IncomeService {
 
@@ -63,6 +67,9 @@ public final class IncomeService {
     /** ownership id -> highest period index already claimed */
     private final Map<String, Integer> claimed = new HashMap<>();
     private final Set<String> inFlight = new HashSet<>();
+    /** ownership id -> epoch millis it ended, for periods settled after the ownership is gone */
+    private final Map<String, Long> ended = new HashMap<>();
+    private static final long ENDED_RETENTION_MILLIS = 10 * 60_000L;
 
     public IncomeService(TerritoryService territories, FactionProvider factions, ProgressionService progression,
                          PayoutRepository payouts, AuditLog audit, EconomyGateway economy, Settings.Income settings,
@@ -108,22 +115,42 @@ public final class IncomeService {
     /** Checks every income territory and pays periods that have completed. Main thread. */
     public void tick() {
         long now = clock.getAsLong();
+        ended.values().removeIf(at -> now - at > ENDED_RETENTION_MILLIS);
         for (TerritoryDefinition def : territories.registry().enabled()) {
-            TerritoryDefinition.Income income = def.income();
             TerritoryState s = territories.state(def.id()).orElse(null);
-            if (income == null || s == null || !s.owned() || s.ownershipId() == null) {
-                continue;
+            if (s != null && s.owned()) {
+                settle(def, s, now);
             }
-            int due = periodIndex(s, income, Math.min(now, s.ownedUntil()));
-            if (income.maxPayoutsPerOwnership() > 0) {
-                due = Math.min(due, income.maxPayoutsPerOwnership());
-            }
-            String ownership = s.ownershipId().toString();
-            int last = claimed.getOrDefault(ownership, 0);
-            for (int period = last + 1; period <= due; period++) {
-                claimed.put(ownership, period);
-                pay(def, s, period, income.amount(), "income");
-            }
+        }
+    }
+
+    /**
+     * Called by the territory service just before an ownership period ends. Pays every period
+     * that completed before {@code endedAt}; later checks would no longer see this ownership.
+     */
+    public void ownershipEnded(TerritoryDefinition def, TerritoryState last, long endedAt) {
+        if (def.income() == null || last.ownershipId() == null || !last.owned()) {
+            return;
+        }
+        long at = Math.min(endedAt, last.ownedUntil());
+        ended.put(last.ownershipId().toString(), at);
+        settle(def, last, at);
+    }
+
+    private void settle(TerritoryDefinition def, TerritoryState s, long now) {
+        TerritoryDefinition.Income income = def.income();
+        if (income == null || s.ownershipId() == null) {
+            return;
+        }
+        int due = periodIndex(s, income, Math.min(now, s.ownedUntil()));
+        if (income.maxPayoutsPerOwnership() > 0) {
+            due = Math.min(due, income.maxPayoutsPerOwnership());
+        }
+        String ownership = s.ownershipId().toString();
+        int last = claimed.getOrDefault(ownership, 0);
+        for (int period = last + 1; period <= due; period++) {
+            claimed.put(ownership, period);
+            pay(def, s, period, income.amount(), "income");
         }
     }
 
@@ -161,14 +188,14 @@ public final class IncomeService {
                 inFlight.remove(key);
                 return;
             }
-            deliver(def, key, period, factionId, ownership, amount, kind);
+            deliver(def, snapshot, key, period, factionId, amount, kind);
         }));
     }
 
-    private void deliver(TerritoryDefinition def, String key, int period, String factionId, String ownership, double amount,
+    private void deliver(TerritoryDefinition def, TerritoryState snapshot, String key, int period, String factionId, double amount,
                          String kind) {
         try {
-            String failure = validate(def, period, factionId, ownership);
+            String failure = validate(def, period, snapshot);
             List<UUID> recipients = failure == null ? recipients(factionId) : List.of();
             if (failure == null && recipients.isEmpty()) {
                 failure = "no recipient available";
@@ -202,22 +229,30 @@ public final class IncomeService {
     }
 
     /** @return {@code null} when the payout is still valid, otherwise why not */
-    private String validate(TerritoryDefinition def, int period, String factionId, String ownership) {
+    private String validate(TerritoryDefinition def, int period, TerritoryState snapshot) {
         Optional<TerritoryState> current = territories.state(def.id());
         if (current.isEmpty()) {
             return "territory no longer exists";
         }
         TerritoryState s = current.get();
+        String factionId = snapshot.ownerFactionId();
+        String ownership = snapshot.ownershipId().toString();
         boolean sameOwnership = s.ownershipId() != null && s.ownershipId().toString().equals(ownership)
                 && factionId.equals(s.ownerFactionId());
-        if (!sameOwnership) {
-            return "ownership changed before payment";
+        long periodEnd = def.income() == null ? Long.MAX_VALUE
+                : snapshot.ownerSince() + period * def.income().interval().toMillis();
+        if (sameOwnership) {
+            if (s.state() == CaptureState.EXPIRED || clock.getAsLong() > s.ownedUntil() && period == CAPTURE_REWARD_PERIOD) {
+                return "ownership expired";
+            }
+        } else {
+            // A finished ownership is still owed the income periods that completed before it ended.
+            Long endedAt = ended.get(ownership);
+            if (period == CAPTURE_REWARD_PERIOD || endedAt == null || periodEnd > endedAt) {
+                return "ownership changed before payment";
+            }
         }
-        if (s.state() == CaptureState.EXPIRED || clock.getAsLong() > s.ownedUntil() && period == CAPTURE_REWARD_PERIOD) {
-            return "ownership expired";
-        }
-        if (period > 0 && def.income() != null
-                && s.ownerSince() + period * def.income().interval().toMillis() > s.ownedUntil()) {
+        if (period > 0 && periodEnd > snapshot.ownedUntil()) {
             return "period ends after ownership expiry";
         }
         Optional<FactionRef> faction = factions.byId(factionId);
@@ -235,7 +270,9 @@ public final class IncomeService {
         if (settings.recipient() == Settings.IncomeRecipient.LEADER) {
             return factions.leaderOf(faction).map(List::of).orElse(List.of());
         }
-        return factions.onlineMembers(faction).stream().map(Player::getUniqueId).toList();
+        List<UUID> online = factions.onlineMembers(faction).stream().map(Player::getUniqueId).toList();
+        // Nobody online: pay the leader instead of losing the period.
+        return online.isEmpty() ? factions.leaderOf(faction).map(List::of).orElse(List.of()) : online;
     }
 
     private void finish(String key, PayoutRepository.Status status, String detail, String factionId, double amount, String kind) {

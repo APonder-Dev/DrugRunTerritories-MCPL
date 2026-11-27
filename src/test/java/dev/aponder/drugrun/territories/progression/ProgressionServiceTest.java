@@ -142,4 +142,21 @@ class ProgressionServiceTest {
         assertThrows(IllegalArgumentException.class, () -> new ProgressDelta(-1, 0, 0, 0, 0, 0, 0, 0));
         assertThrows(IllegalArgumentException.class, () -> ProgressDelta.income(Double.NaN));
     }
+
+    @Test
+    @DisplayName("Batched writes merge increments per faction and reach storage on flush")
+    void batching() throws Exception {
+        service.enableBatching();
+        for (int i = 0; i < 200; i++) {
+            service.recordHarvest("f");
+        }
+        assertEquals(200, service.get("f").harvests(), "reads see every increment at once");
+        assertTrue(repo.loadAll().join().isEmpty(), "nothing is written before a flush");
+        service.flush().get(10, java.util.concurrent.TimeUnit.SECONDS);
+        FactionProgress stored = repo.loadAll().join().get("f");
+        assertEquals(200, stored.harvests());
+        assertEquals(service.get("f").xp(), stored.xp());
+        service.flush().get(10, java.util.concurrent.TimeUnit.SECONDS);
+        assertEquals(200, repo.loadAll().join().get("f").harvests(), "a second flush writes nothing twice");
+    }
 }

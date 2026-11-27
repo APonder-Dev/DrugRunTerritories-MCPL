@@ -72,6 +72,10 @@ class SettingsLoaderTest {
         overrides.createSection("loot-keys.faction-policy.territory-overrides", Map.of("docks", "MAYBE"));
         assertFalse(SettingsLoader.load(overrides).ok());
         assertFalse(loadWith("config-version", 99).ok());
+        YamlConfiguration longCapture = Fixtures.bundled("config.yml");
+        longCapture.set("territories.capture.duration-seconds", 7_200);
+        longCapture.set("territories.capture.ownership-duration-hours", 1);
+        assertFalse(SettingsLoader.load(longCapture).ok(), "a capture may not outlast the ownership it wins");
     }
 
     @Test

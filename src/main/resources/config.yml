@@ -57,6 +57,9 @@ territories:
     exclude-creative: true
     # Allow a controlled territory to be challenged once its post-capture cooldown ends.
     allow-challenges: true
+    # After a server start, captures restored from storage are held (not drained or failed) for
+    # this long while their players reconnect. 0 disables.
+    restart-grace-seconds: 120
 
   bonuses:
     # HIGHEST: only the strongest bonus applies.
@@ -76,7 +79,8 @@ territories:
   income:
     # Pay periods that elapsed while the server was offline. Off by default.
     pay-missed-periods: false
-    # LEADER pays the faction admin's Vault account. ONLINE_MEMBERS splits among online members.
+    # LEADER pays the faction admin's Vault account. ONLINE_MEMBERS splits among online members
+    # (the leader is paid instead when no member is online).
     recipient: LEADER
 
   protection:
@@ -168,9 +172,13 @@ announcements:
   capture-completed: true
   territory-expired: true
   faction-raidable: true
+  # Capture start and contested messages repeat at most this often per territory, so players
+  # hovering at the zone edge do not flood chat. Completions and expiries are always announced.
+  repeat-cooldown-seconds: 30
   # Sound keys as in /playsound, e.g. entity.player.levelup. Empty disables the sound.
   sounds:
     capture-completed: entity.player.levelup
+    # Played only to players inside the contested territory.
     contested: block.note_block.bass
     volume: 1.0
     pitch: 1.0

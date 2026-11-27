@@ -40,9 +40,15 @@ public final class CaptureEngine {
      * @param elapsedSeconds time since the previous evaluation
      * @param scheduleOpen whether the territory's capture window is open
      * @param present faction id to number of eligible players in the capture zone (only factions with players)
+     * @param holdAbandoned keep an under-strength capture as it is instead of draining or failing it
+     *                      (used just after a restart, while capturers reconnect)
      */
     public record Tick(long now, double elapsedSeconds, boolean scheduleOpen, Map<String, Integer> present,
-                       Eligibility eligibility) {
+                       Eligibility eligibility, boolean holdAbandoned) {
+
+        public Tick(long now, double elapsedSeconds, boolean scheduleOpen, Map<String, Integer> present, Eligibility eligibility) {
+            this(now, elapsedSeconds, scheduleOpen, present, eligibility, false);
+        }
     }
 
     /** New state plus the events that led to it, in order. */
@@ -174,6 +180,9 @@ public final class CaptureEngine {
         // Capturer is below the minimum (or gone).
         if (st.state() == CaptureState.CONTESTED) {
             st = move(st, CaptureState.CAPTURING);
+        }
+        if (tick.holdAbandoned()) {
+            return st;
         }
         if (rules.decayWhenAbandoned()) {
             st = st.withProgress(st.progressSeconds() - decay);

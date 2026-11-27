@@ -152,6 +152,7 @@ public final class DrugRunTerritoriesPlugin extends JavaPlugin implements Listen
         FactionNames names = new FactionNames(factions);
         ProgressionRepository progressionRepo = new ProgressionRepository(dataStore);
         progression = new ProgressionService(progressionRepo, loaded.progression(), loaded.capture().maximumPerFaction(), getLogger());
+        progression.enableBatching();
         long raidWindow = System.currentTimeMillis() - loaded.progression().raidVictoryCooldown().toMillis();
         progression.load(await(progressionRepo.loadAll(), "progression"), await(progressionRepo.raidVictoriesSince(raidWindow), "raid history"));
 
@@ -174,6 +175,7 @@ public final class DrugRunTerritoriesPlugin extends JavaPlugin implements Listen
         income = new IncomeService(territories, factions, progression, payouts, audit, economy, loaded.income(), mainThread,
                 System::currentTimeMillis, getLogger());
         income.initialize(await(payouts.claimedPeriods(), "payout ledger"));
+        territories.addOwnershipEndListener(income::ownershipEnded);
 
         // 5. Listeners.
         territories.addListener(new CaptureRewardListener(progression, income, territoryRepo, System::currentTimeMillis, getLogger()));
@@ -232,6 +234,7 @@ public final class DrugRunTerritoriesPlugin extends JavaPlugin implements Listen
             display.update();
         }, interval, interval));
         tasks.add(getServer().getScheduler().runTaskTimer(this, income::tick, 20L * 30, 20L * 30));
+        tasks.add(getServer().getScheduler().runTaskTimer(this, progression::flush, 20L * 5, 20L * 5));
     }
 
     @Override
@@ -250,6 +253,13 @@ public final class DrugRunTerritoriesPlugin extends JavaPlugin implements Listen
                 territories.saveAll().get(10, TimeUnit.SECONDS);
             } catch (Exception e) {
                 getLogger().log(Level.SEVERE, "Could not save every territory on shutdown", e);
+            }
+        }
+        if (progression != null) {
+            try {
+                progression.flush().get(10, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                getLogger().log(Level.SEVERE, "Could not save faction progression on shutdown", e);
             }
         }
         shutdownStorage();

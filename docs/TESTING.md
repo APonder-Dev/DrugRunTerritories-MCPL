@@ -41,6 +41,18 @@ Paper 26.3 build 259 with FactionsUUID 4.7.2, DrugLab (patched), Vault, WorldGua
 
 Water does not tick in force-loaded chunks without a player, so console-only water tests are not meaningful.
 
+### QA timing pass (2026-11-27, localhost copy of the test server, one bot, 60 s captures, 1 min income)
+
+| Check | Result |
+|---|---|
+| Upgrade adds `restart-grace-seconds` and `repeat-cooldown-seconds` to an existing config.yml | pass |
+| Bot steps in and out of the zone 8 times in about 70 s | pass, 8 starts in capture history, 3 announced in chat (30 s apart); failures of quiet starts stay quiet |
+| Player dies inside the zone | pass, stops counting; the capture drains |
+| Restart with an 8 s capture stored and nobody online | pass, held at 8.0 s for 120 s, then drained and failed at about 128 s |
+| Capture completes | pass, announced; 500 XP / 35 reputation in storage within a second |
+| Admin reset 2 s after income period 1 ended, before the next 30 s income check | pass, period 1 paid once (100.00), no FAILED rows |
+| Errors or exceptions in three server runs | none |
+
 ## What was not run
 
 - **Live gameplay with real players:** captures, contests, BossBars, faction claims, dealer sales and Vault payouts on the live server.

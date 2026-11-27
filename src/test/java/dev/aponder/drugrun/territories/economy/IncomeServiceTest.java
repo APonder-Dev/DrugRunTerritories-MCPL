@@ -217,4 +217,46 @@ class IncomeServiceTest {
         assertEquals(250.0, economy.total(), 1e-9);
         assertTrue(economy.deposits.stream().allMatch(d -> (Double) d[1] == 125.0));
     }
+
+    @Test
+    @DisplayName("Periods that finished before ownership ended are paid even when the income check had not run yet")
+    void finalPeriodsSettledOnExpiry() {
+        territories.forceCapture("downtown", "1");
+        IncomeService income = income(Settings.IncomeRecipient.LEADER, false);
+        territories.addOwnershipEndListener(income::ownershipEnded);
+        clock.addAndGet(Duration.ofMinutes(4 * 60 + 30).toMillis());
+        income.tick();
+        Fixtures.eventually(() -> payoutsWith(PayoutRepository.Status.PAID) == 4);
+        // Period 5 ends at 5h, but no income check runs before the ownership expires.
+        clock.addAndGet(Duration.ofHours(20).toMillis());
+        territories.tick();
+        Fixtures.eventually(() -> payoutsWith(PayoutRepository.Status.PAID) == 5);
+        income.tick();
+        assertEquals(1250.0, economy.total(), 1e-9);
+        assertEquals(0, payoutsWith(PayoutRepository.Status.FAILED));
+    }
+
+    @Test
+    @DisplayName("A period still running when ownership ends is not paid")
+    void unfinishedPeriodNotPaid() {
+        territories.forceCapture("downtown", "1");
+        IncomeService income = income(Settings.IncomeRecipient.LEADER, false);
+        territories.addOwnershipEndListener(income::ownershipEnded);
+        clock.addAndGet(Duration.ofMinutes(90).toMillis());
+        territories.reset("downtown");
+        Fixtures.eventually(() -> payoutsWith(PayoutRepository.Status.PAID) == 1);
+        income.tick();
+        assertEquals(250.0, economy.total(), 1e-9);
+    }
+
+    @Test
+    @DisplayName("ONLINE_MEMBERS pays the leader when no member is online")
+    void onlineMembersFallBackToLeader() {
+        territories.forceCapture("downtown", "1");
+        IncomeService income = income(Settings.IncomeRecipient.ONLINE_MEMBERS, false);
+        clock.addAndGet(Duration.ofMinutes(61).toMillis());
+        income.tick();
+        Fixtures.eventually(() -> economy.deposits.size() == 1);
+        assertEquals(leader, economy.deposits.getFirst()[0]);
+    }
 }
