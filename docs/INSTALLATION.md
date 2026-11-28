@@ -62,7 +62,7 @@ mvn clean verify
 
 This compiles, runs all tests, fails on any error, and produces `target/DrugRunTerritories-0.1.0-SNAPSHOT.jar`.
 
-CI: `.github/workflows/build.yml` checks out DrugLab next to this repository, installs it, and runs `mvn verify`. For a private DrugLab repository, set the `DRUGLAB_TOKEN` secret (and `DRUGLAB_REPOSITORY` if it moves).
+CI: `.github/workflows/build.yml` checks out DrugLab next to this repository, installs it, and runs `mvn verify`. For a private DrugLab repository, set the `DRUGLAB_TOKEN` secret (and `DRUGLAB_REPOSITORY` if it moves). CI only uploads test reports, not the plugin JAR, so build the JAR yourself until releases are published.
 
 ## Dependencies bundled in the jar
 

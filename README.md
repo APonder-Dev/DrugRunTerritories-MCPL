@@ -22,7 +22,7 @@ Faction territory warfare for the **DrugRun** Minecraft server: capturable distr
 ## Quick start
 
 1. Install **FactionsUUID 4.6+** (required) and optionally DrugLab, Vault, PlaceholderAPI, WorldGuard.
-2. Build the plugin (see [INSTALLATION.md](docs/INSTALLATION.md)) or use a CI artifact, and drop `DrugRunTerritories-0.1.0-SNAPSHOT.jar` in `plugins/`.
+2. Build the plugin (see [INSTALLATION.md](docs/INSTALLATION.md)) and drop `DrugRunTerritories-0.1.0-SNAPSHOT.jar` in `plugins/`.
 3. Start the server once. Edit `plugins/DrugRunTerritories/config.yml`.
 4. The four bundled districts start **disabled** with placeholder coordinates. In-game, at each district:
    ```
